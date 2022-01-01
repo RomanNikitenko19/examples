@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import PostFilter from "./components/PostFilter/PostFilter";
 import PostForm from "./components/PostForm/PostForm";
 import PostList from "./components/PostList/PostList";
-import MyInput from "./components/UI/input/MyInput";
-import MySelect from "./components/UI/select/MySelect";
+import MyButton from "./components/UI/button/MyButton";
+import MyModal from "./components/UI/modal/MyModal";
 // import Counter from './components/Counter/Counter';
 // import ClassCounter from "./components/ClassCounter/ClassCounter";
 import "./style/App.css";
@@ -14,53 +15,43 @@ function App() {
     { id: 2, title: "JavaScript 2", body: "JavaScript - multi-paradigm programming language." },
     { id: 3, title: "JavaScript 3", body: "JavaScript - multi-paradigm programming language." },
   ]);
-  const [selectedSort, setSelectedSort] = useState('');
-  const [serchQuery, setSearhQuery] = useState('');
 
-  function getSortedPosts() {
-    console.log('sort posts');
-    if (selectedSort) {
-      return [...posts].sort((a, b) => a[selectedSort].localeCompare(b[selectedSort]));
+  const [filter, setFilter] = useState({ sort: '', query: '' });
+  const [modal, setModal] = useState(false);
+
+  const sortedPost = useMemo(() => {
+    if (filter.sort) {
+      return [...posts].sort((a, b) => a[filter.sort].localeCompare(b[filter.sort]));
     }
     return posts;
-  }
+  }, [filter.sort, posts]);
 
-  const sortedPost = getSortedPosts();
-  const sortPost = (sort) => {
-    setSelectedSort(sort);
-  }
+  const sortedAndSerchedPosts = useMemo(() => {
+    return sortedPost.filter((post) => post.title.toLowerCase().includes(filter.query));
+  }, [filter.query, sortedPost]);
 
   const createPost = (newPost) => {
     setPosts([...posts, newPost]);
-  }
+    setModal(false);
+  };
 
   /*get post from child component*/
   const removePost = (post) => {
-    setPosts(posts.filter(p => p.id !== post.id));
-  }
+    setPosts(posts.filter((p) => p.id !== post.id));
+  };
 
   return (
     <>
       <div className="App">
-        <PostForm create={createPost} />
+        <MyButton onClick={() => setModal(true)} style={{marginTop: 30}}>
+          create user
+        </MyButton>
+        <MyModal visible={modal} setVisible={setModal}>
+          <PostForm create={createPost} />
+        </MyModal>
         <hr style={{ margin: "15px, 0" }} />
-        <div>
-          <MyInput value={serchQuery} onChange={(e) => setSearhQuery(e.target.value)} placeholder="search..." />
-          <MySelect
-            value={selectedSort}
-            onChange={sortPost}
-            defaultValue="sort by"
-            options={[
-              { value: "title", name: "by name" },
-              { value: "body", name: "by description" },
-            ]}
-          />
-        </div>
-        {posts.length ? (
-          <PostList remove={removePost} posts={sortedPost} title="Post of JavaScript" />
-        ) : (
-          <h1 style={{ textAlign: "center" }}>posts not found</h1>
-        )}
+        <PostFilter filter={filter} setFilter={setFilter} />
+        <PostList remove={removePost} posts={sortedAndSerchedPosts} title="Post of JavaScript" />
       </div>
     </>
   );
